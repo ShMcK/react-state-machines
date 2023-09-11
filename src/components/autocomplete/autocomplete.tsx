@@ -9,7 +9,12 @@ export function AutoComplete() {
   // console.log('xstate', current.value.toString(), current.context)
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const value = e.target.value;
+    if (!value.length) {
+      send({ type: "CLEAR_INPUT" })  
+    } else {
     send({ type: "INPUT", payload: { query: e.target.value } })
+    }
   }
 
   function onSelect(event: React.MouseEvent<HTMLElement>) {
@@ -33,7 +38,7 @@ export function AutoComplete() {
     switch(e.code) {
       case 'ArrowDown':
       case 'ArrowUp':
-        send({ type: 'CHANGE_POSITION', payload: { code: e.code }})
+        send({ type: 'KEY_TOGGLE_ACTIVE_INDEX', payload: { code: e.code }})
         return
       case 'Enter':
         send({ type: 'SELECT_CURRENT' })

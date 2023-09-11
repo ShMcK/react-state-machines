@@ -4,7 +4,7 @@ async function getSearchResults(query: string) {
   return [{ id: '1', name: 'Hello'}, { id: '2', name: 'World'}]
 }
 
-const search = async (context: any, event: any) => {
+function search (context: any, event: any) {
   return new Promise((resolve) => {
     setTimeout(
       () =>
@@ -14,29 +14,6 @@ const search = async (context: any, event: any) => {
     );
   });
 }
-
-const setQuery = assign((context: any, event: any) => ({ query: event?.payload?.query || '' }))
-const setSearchResults = assign((context: any, event: any) => {
-  return { results: event.data || [] }
-})
-const setErrorMessage = assign((context: any, event: any) => ({ errorMessage: event.data || [] }))
-const setSelectedIndex = assign((context: any, event: any) => {
-  if (event.payload.code === 'ArrowUp' && context.activeIndex > 0) {
-    return { activeIndex: context.activeIndex - 1 }
-  } else if (event.payload.code === 'ArrowDown' && context.activeIndex < context.results.length - 1) {
-    return { activeIndex: context.activeIndex + 1 }
-  }
-})
-const setActiveIndex = assign((context, event: any) => ({
-    activeIndex: event.payload.index,
-}))
-const setDefaultIndex = assign((context: any, event: any) => {
-  if (context.results?.length) {
-    return { activeIndex: 0 }
-  } else {
-    return { activeIndex: -1 }
-  }
-})
 
 export const autoCompleteMachine = createMachine(
   {
@@ -54,14 +31,15 @@ export const autoCompleteMachine = createMachine(
       activeIndex: number
     },
     on: {
-      INPUT: [{
+      INPUT: {
         target: "Typing",
         cond: (context, event) => !!event.payload.query.length,
-        actions: [setQuery],
-      }, {
+        actions: ['setQuery'],
+      },
+      CLEAR_INPUT: {
         target: 'Idle',
-        actions: [setQuery],
-      }],
+        actions: ['clearQuery'],
+      },
     },
     states: {
       Idle: {},
@@ -76,33 +54,21 @@ export const autoCompleteMachine = createMachine(
           src: search,
           onError: {
             target: 'Error',
-            actions: [setErrorMessage],
+            actions: ['setErrorMessage'],
           },
           onDone: {
             target: 'Results',
-            actions: [setSearchResults, setDefaultIndex],
+            actions: ['setSearchResults', 'setDefaultIndex'],
           }
-        },
-        on: {
-          SUCCESS: {
-            target: "Results",
-          },
-          FAILURE: {
-            target: "Error",
-          },
         },
       },
       Results: {
-        entry: {
-          type: "DisplayResults",
-          params: {},
-        },
         on: {
-          CHANGE_POSITION: {
-            actions: [setSelectedIndex],
+          KEY_TOGGLE_ACTIVE_INDEX: {
+            actions: ['setSelectedIndex'],
           },
           SET_ACTIVE_INDEX: {
-            actions: [setActiveIndex]
+            actions: ['setActiveIndex']
           },
           CLEAR_RESULTS: {
             target: "Idle",
@@ -133,10 +99,9 @@ export const autoCompleteMachine = createMachine(
     },
     schema: {
       events: {} as
-        | { type: "SUCCESS" }
-        | { type: "FAILURE" }
         | { type: "INPUT", payload: { query: string } }
-        | { type: "CHANGE_POSITION", payload: { code: 'ArrowDown' | 'ArrowUp' } }
+        | { type: "CLEAR_INPUT" }
+        | { type: "KEY_TOGGLE_ACTIVE_INDEX", payload: { code: 'ArrowDown' | 'ArrowUp' } }
         | { type: "SELECT_CURRENT" }
         | { type: "CLEAR_RESULTS" }
         | { type: "LOAD_MORE" }
@@ -148,7 +113,39 @@ export const autoCompleteMachine = createMachine(
     preserveActionOrder: true,
   },
   {
-    actions: {},
+    actions: {
+      setQuery: assign((context: any, event: any) => {
+        return { query: event?.payload?.query || '' }
+      }),
+      clearQuery: assign((context: any, event: any) => {
+        return { query: '' }
+      }),
+      setSearchResults: assign(function setSearchResults(context: any, event: any) {
+        return { results: event.data || [] }
+      }),
+      setErrorMessage: assign(function setErrorMessage(context: any, event: any) {
+        return { errorMessage: event.data || [] }
+      }),
+      setSelectedIndex: assign(function setSelectedIndex(context: any, event: any) {
+        if (event.payload.code === 'ArrowUp' && context.activeIndex > 0) {
+          return { activeIndex: context.activeIndex - 1 }
+        } else if (event.payload.code === 'ArrowDown' && context.activeIndex < context.results.length - 1) {
+          return { activeIndex: context.activeIndex + 1 }
+        }
+      }),
+      setActiveIndex: assign(function setActiveIndex(context, event: any) {
+        return {
+          activeIndex: event.payload.index,
+        }
+      }),
+      setDefaultIndex: assign(function setDefaultIndex(context: any, event: any) {
+        if (context.results?.length) {
+          return { activeIndex: 0 }
+        } else {
+          return { activeIndex: -1 }
+        }
+      })
+    },
     services: {},
     guards: {},
     delays: {
