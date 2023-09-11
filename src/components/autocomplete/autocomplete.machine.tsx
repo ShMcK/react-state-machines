@@ -15,9 +15,19 @@ function search (context: any, event: any) {
   });
 }
 
+function loadMore (context: any, event: any) {
+  return new Promise((resolve) => {
+    setTimeout(
+      () =>
+        resolve([{ id: '3', name: 'More'}, { id: '4', name: 'Data'}]),
+      500
+    );
+  });
+}
+
 export const autoCompleteMachine = createMachine(
   {
-    id: "AutoComplete Machine",
+    id: "AutoComplete",
     initial: "Idle",
     context: {
       query: '',
@@ -70,11 +80,9 @@ export const autoCompleteMachine = createMachine(
           SET_ACTIVE_INDEX: {
             actions: ['setActiveIndex']
           },
-          CLEAR_RESULTS: {
-            target: "Idle",
-          },
           LOAD_MORE: {
-            target: "Searching",
+            target: "#AutoComplete.Results.LoadMore",
+            // add condition if more exists
           },
           SELECT_CURRENT: {
             target: "Done",
@@ -83,6 +91,24 @@ export const autoCompleteMachine = createMachine(
             target: "Done"
           }
         },
+        initial: 'Loaded',
+        states: {
+          Loaded: {},
+          LoadMore: {
+            invoke: {
+              id: 'loadMore',
+              src: loadMore,
+              onError: {
+                target: '#AutoComplete.Error',
+                actions: ['setErrorMessage'],
+              },
+              onDone: {
+                target: '#AutoComplete.Results.Loaded',
+                actions: ['appendSearchResults'],
+              }
+            },
+          },
+        }
       },
       Error: {
         entry: {
@@ -122,6 +148,9 @@ export const autoCompleteMachine = createMachine(
       }),
       setSearchResults: assign(function setSearchResults(context: any, event: any) {
         return { results: event.data || [] }
+      }),
+      appendSearchResults: assign(function setSearchResults(context: any, event: any) {
+        return { results: [...context.results, ...event.data] }
       }),
       setErrorMessage: assign(function setErrorMessage(context: any, event: any) {
         return { errorMessage: event.data || [] }

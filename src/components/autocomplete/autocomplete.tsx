@@ -14,7 +14,7 @@ export function AutoComplete() {
       send({ type: "CLEAR_INPUT" })  
     } else {
     send({ type: "INPUT", payload: { query: e.target.value } })
-    }
+  }
   }
 
   function onSelect(event: React.MouseEvent<HTMLElement>) {
@@ -32,6 +32,10 @@ export function AutoComplete() {
     if (typeof itemIndex === 'number' && itemIndex !== current.context.activeIndex) {
       send({ type: 'SET_ACTIVE_INDEX', payload: { index: itemIndex }})
     }
+  }
+
+  function onLoadMore() {
+    send({ type: 'LOAD_MORE'})
   }
 
   function handleKeyPress(e: React.KeyboardEvent): void {
@@ -53,9 +57,12 @@ export function AutoComplete() {
     {current.matches('Searching') && <div>Searching</div>}
     {current.matches('Error') && <div>{current.context.errorMessage}</div>}
     {current.matches('Results') && (
+      <>
       <div onClick={onSelect} onMouseOver={onHover}>{current.context.results.map((item: any, index: number) => (
         <div key={item.id} data-id={item.id} data-index={index}>{index === current.context.activeIndex ? '*' : ' '} {item.name}</div>)
       )}</div>
+      <button onClick={onLoadMore}>Load More</button>
+      </>
     )}
     {current.matches('Done') && <div>! {current.context.results[current.context.activeIndex]?.name}</div>}
     </div>;
