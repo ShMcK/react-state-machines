@@ -12,5 +12,5 @@
 		"editor.formatOnPaste": true,
 		"editor.formatOnSave": true
 	},
-	"cSpell.words": ["tailwindcss"]
+	"cSpell.words": ["autodocs", "tailwindcss"]
 }
